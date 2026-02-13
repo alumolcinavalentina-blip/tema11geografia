@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tema 11 — La distribución y el movimiento de la población</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e17;
+    --surface: #1a1929;
+    --surface2: #252438;
+    --orange: #ff6b35;
+    --orange2: #ff9a5c;
+    --gold: #ffd166;
+    --teal: #06d6a0;
+    --red: #ef476f;
+    --text: #fffffe;
+    --muted: #a7a9be;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,107,53,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,53,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+  .bg-blob {
+    position: fixed; border-radius: 50%; filter: blur(80px);
+    pointer-events: none; z-index: 0;
+  }
+  .blob1 { width:400px; height:400px; background:rgba(255,107,53,0.12); top:-100px; right:-100px; animation: drift 12s ease-in-out infinite alternate; }
+  .blob2 { width:300px; height:300px; background:rgba(6,214,160,0.08); bottom:-50px; left:-80px; animation: drift 16s ease-in-out infinite alternate-reverse; }
+  @keyframes drift { from{transform:translate(0,0)} to{transform:translate(30px,40px)} }
+
+  .wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  header { text-align: center; padding: 3rem 0 2rem; }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+  }
+  header p { color: var(--muted); font-size: 1.05rem; margin-top: .6rem; }
+
+  .scorebar {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .chip {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 999px; padding: .4rem 1.2rem;
+    font-family: 'Syne', sans-serif; font-size: .9rem; font-weight: 700;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .chip span { color: var(--orange); }
+
+  #menu { animation: fadeUp .5s ease; }
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+  @media(max-width:480px){ .mode-grid { grid-template-columns: 1fr; } }
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.6rem;
+    cursor: pointer; transition: all .25s ease;
+    position: relative; overflow: hidden;
+  }
+  .mode-card:hover {
+    border-color: var(--orange);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(255,107,53,0.15);
+  }
+  .mode-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,107,53,0.06), transparent);
+    opacity: 0; transition: opacity .25s;
+  }
+  .mode-card:hover::before { opacity: 1; }
+  .mode-icon { font-size: 2.2rem; margin-bottom: .7rem; }
+  .mode-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; margin-bottom: .3rem; }
+  .mode-card p { color: var(--muted); font-size: .88rem; line-height: 1.4; }
+
+  #game { display: none; animation: fadeUp .4s ease; }
+  .progress-wrap { margin-bottom: 1.5rem; }
+  .progress-label { display: flex; justify-content: space-between; color: var(--muted); font-size: .85rem; margin-bottom: .5rem; }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--orange), var(--gold));
+    transition: width .4s ease;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .q-badge {
+    display: inline-block;
+    background: rgba(255,107,53,0.15); color: var(--orange2);
+    border-radius: 999px; padding: .2rem .8rem;
+    font-size: .8rem; font-weight: 500; margin-bottom: 1rem;
+  }
+  .question-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.05rem, 3vw, 1.3rem);
+    font-weight: 700; line-height: 1.4;
+  }
+
+  .options { display: grid; gap: .75rem; }
+  .opt {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.3rem;
+    cursor: pointer; font-size: .98rem; line-height: 1.4;
+    transition: all .2s ease; text-align: left;
+    display: flex; align-items: center; gap: .8rem;
+  }
+  .opt-letter {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .85rem;
+    flex-shrink: 0; transition: all .2s;
+  }
+  .opt:hover:not(.disabled) { border-color: var(--orange); background: rgba(255,107,53,0.07); }
+  .opt:hover:not(.disabled) .opt-letter { background: var(--orange); color: white; border-color: var(--orange); }
+  .opt.correct { border-color: var(--teal); background: rgba(6,214,160,0.1); }
+  .opt.correct .opt-letter { background: var(--teal); color: #0f0e17; border-color: var(--teal); }
+  .opt.wrong { border-color: var(--red); background: rgba(239,71,111,0.1); }
+  .opt.wrong .opt-letter { background: var(--red); color: white; border-color: var(--red); }
+  .opt.disabled { cursor: default; }
+
+  .feedback {
+    border-radius: 12px; padding: 1rem 1.3rem;
+    margin-top: 1rem; display: none;
+    font-size: .95rem; line-height: 1.5;
+  }
+  .feedback.show { display: block; animation: fadeUp .3s ease; }
+  .feedback.ok { background: rgba(6,214,160,0.12); border: 1px solid rgba(6,214,160,0.3); color: #06d6a0; }
+  .feedback.ko { background: rgba(239,71,111,0.12); border: 1px solid rgba(239,71,111,0.3); color: #ef476f; }
+
+  .fill-wrap { margin-top: 1.2rem; }
+  .fill-input {
+    width: 100%; padding: .9rem 1.2rem;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 1rem;
+    outline: none; transition: border .2s;
+  }
+  .fill-input:focus { border-color: var(--orange); }
+  .fill-input.correct { border-color: var(--teal); background: rgba(6,214,160,0.07); }
+  .fill-input.wrong { border-color: var(--red); background: rgba(239,71,111,0.07); }
+
+  .match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: 1rem; }
+  .match-col { display: flex; flex-direction: column; gap: .6rem; }
+  .match-item {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: .8rem 1rem;
+    cursor: pointer; font-size: .9rem; line-height: 1.3;
+    transition: all .2s; user-select: none;
+  }
+  .match-item:hover:not(.used):not(.disabled) { border-color: var(--orange2); }
+  .match-item.selected { border-color: var(--gold); background: rgba(255,209,102,0.1); }
+  .match-item.matched { border-color: var(--teal); background: rgba(6,214,160,0.1); color: var(--teal); cursor: default; }
+  .match-item.error { border-color: var(--red); background: rgba(239,71,111,0.1); animation: shake .3s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  .btn-next {
+    width: 100%; padding: 1rem;
+    background: linear-gradient(135deg, var(--orange), var(--orange2));
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    cursor: pointer; margin-top: 1rem;
+    transition: all .2s; display: none;
+    box-shadow: 0 4px 20px rgba(255,107,53,0.3);
+  }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,107,53,0.4); }
+  .btn-next.show { display: block; animation: fadeUp .3s ease; }
+
+  #result { display: none; text-align: center; animation: fadeUp .5s ease; }
+  .result-circle {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    margin: 2rem auto 1rem;
+    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+    box-shadow: 0 0 60px rgba(255,107,53,0.4);
+  }
+  #result h2 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: .5rem; }
+  #result p { color: var(--muted); font-size: 1rem; margin-bottom: 1.5rem; }
+  .stars { font-size: 2rem; margin: .5rem 0 1rem; }
+  .btn-menu {
+    padding: .9rem 2.5rem;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    color: var(--text); border-radius: 12px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    cursor: pointer; margin: .4rem; transition: all .2s;
+  }
+  .btn-menu:hover { border-color: var(--orange); }
+  .btn-primary {
+    padding: .9rem 2.5rem;
+    background: linear-gradient(135deg, var(--orange), var(--orange2));
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    cursor: pointer; margin: .4rem; transition: all .2s;
+    box-shadow: 0 4px 20px rgba(255,107,53,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-blob blob1"></div>
+<div class="bg-blob blob2"></div>
+
+<div class="wrap">
+  <header>
+    <h1>Tema 11<br>La distribución y el movimiento de la población</h1>
+    <p>Elige un modo de juego para repasar el tema</p>
+  </header>
+
+  <div class="scorebar">
+    <div class="chip">🏆 Puntos: <span id="totalScore">0</span></div>
+    <div class="chip">🔥 Racha: <span id="streak">0</span></div>
+  </div>
+
+  <!-- MENÚ -->
+  <div id="menu">
+    <div class="mode-grid">
+      <div class="mode-card" onclick="startMode('test')">
+        <div class="mode-icon">🧠</div>
+        <h3>Test</h3>
+        <p>Responde preguntas de opción múltiple sobre todos los conceptos del tema.</p>
+      </div>
+      <div class="mode-card" onclick="startMode('fill')">
+        <div class="mode-icon">✍️</div>
+        <h3>Completa la frase</h3>
+        <p>Escribe la palabra o cifra que falta en definiciones y conceptos clave.</p>
+      </div>
+      <div class="mode-card" onclick="startMode('match')">
+        <div class="mode-icon">🔗</div>
+        <h3>Empareja</h3>
+        <p>Une cada concepto con su definición correcta.</p>
+      </div>
+      <div class="mode-card" onclick="startMode('true')">
+        <div class="mode-icon">⚡</div>
+        <h3>Verdadero o Falso</h3>
+        <p>Decide rápido si cada afirmación sobre migración y población es correcta.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- JUEGO -->
+  <div id="game">
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="modeLabel">Test</span>
+        <span id="qCount">1 / 10</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+    <div id="questionArea"></div>
+    <button class="btn-next" id="btnNext" onclick="nextQuestion()">Siguiente →</button>
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="result">
+    <div class="result-circle" id="resultScore"></div>
+    <div class="stars" id="resultStars"></div>
+    <h2 id="resultTitle"></h2>
+    <p id="resultMsg"></p>
+    <div>
+      <button class="btn-primary" onclick="restartMode()">Jugar de nuevo</button>
+      <button class="btn-menu" onclick="goMenu()">Menú</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// BANCO DE PREGUNTAS — TEMA 11
+// ══════════════════════════════════════════════
+
+const testQuestions = [
+  {
+    q: "¿Qué mide la densidad de población?",
+    opts: ["El número total de habitantes de un país","La relación entre el número de habitantes y la superficie en km²","La velocidad de crecimiento de una ciudad","El porcentaje de población urbana"],
+    a: 1, exp: "Densidad de población = Población total / Superficie (km²). La media mundial es de unos 60 hab/km²."
+  },
+  {
+    q: "¿Cuál es la densidad media de población en Europa?",
+    opts: ["30 hab/km²","50 hab/km²","70 hab/km²","120 hab/km²"],
+    a: 2, exp: "Europa tiene una elevada densidad de población de unos 70 hab/km², distribuida de forma irregular."
+  },
+  {
+    q: "¿Qué zona de Europa concentra las mayores densidades de población?",
+    opts: ["El norte escandinavo","El eje Inglaterra–Italia, pasando por Países Bajos, Bélgica, norte de Francia y Alemania","La península ibérica","Los países bálticos"],
+    a: 1, exp: "Las mayores densidades se concentran en ese eje central que atraviesa el corazón industrial y económico de Europa."
+  },
+  {
+    q: "¿Qué es un movimiento migratorio?",
+    opts: ["Un desplazamiento de población por motivos de ocio","Un desplazamiento de población que implica abandonar el lugar de residencia por motivos no relacionados con el ocio","El traslado temporal a una segunda residencia","Un viaje de trabajo de menos de una semana"],
+    a: 1, exp: "Los movimientos migratorios son desplazamientos que suponen cambiar el lugar de residencia de forma no relacionada con el ocio."
+  },
+  {
+    q: "¿Cómo se llama la persona que llega a vivir a un lugar diferente al que residía?",
+    opts: ["Emigrante","Refugiado","Inmigrante","Solicitante de asilo"],
+    a: 2, exp: "Los inmigrantes son quienes llegan a un lugar nuevo; los emigrantes son quienes abandonan su lugar de residencia."
+  },
+  {
+    q: "¿Qué es el saldo migratorio?",
+    opts: ["El total de personas que emigran al año","La diferencia entre inmigrantes y emigrantes de un territorio","El porcentaje de extranjeros en un país","El número de refugiados reconocidos"],
+    a: 1, exp: "El saldo migratorio = inmigrantes − emigrantes. Es positivo cuando llegan más de los que se van, y negativo en caso contrario."
+  },
+  {
+    q: "¿Cuál de estas NO es una causa de los movimientos migratorios?",
+    opts: ["Fenómenos naturales adversos como terremotos o sequías","Razones políticas como persecuciones o guerras","Motivos económicos para encontrar trabajo","Viajes de vacaciones al extranjero"],
+    a: 3, exp: "Las migraciones tienen causas naturales, políticas y económicas. Los viajes de ocio no constituyen movimientos migratorios."
+  },
+  {
+    q: "¿Cómo se clasifican las migraciones según el territorio?",
+    opts: ["Rápidas o lentas","Interiores o exteriores / internacionales","Voluntarias o forzosas únicamente","Laborales o familiares"],
+    a: 1, exp: "Por el territorio pueden ser interiores (dentro del propio país) o exteriores/internacionales (entre países distintos)."
+  },
+  {
+    q: "¿Qué es el éxodo rural?",
+    opts: ["La llegada masiva de personas al campo desde las ciudades","El desplazamiento masivo de población del campo hacia las ciudades","El abandono de las ciudades costeras","La emigración de agricultores a otros países"],
+    a: 1, exp: "El éxodo rural fue el desplazamiento masivo de personas desde el campo a las ciudades, especialmente intenso durante el siglo XX."
+  },
+  {
+    q: "¿Qué son las migraciones pendulares?",
+    opts: ["Migraciones estacionales según las estaciones del año","Desplazamientos diarios desde el lugar de residencia al lugar de trabajo","Migraciones entre países del hemisferio norte y sur","Movimientos de ida y vuelta entre dos países"],
+    a: 1, exp: "Las migraciones pendulares son las más comunes hoy: los desplazamientos diarios del hogar al trabajo y de vuelta."
+  },
+  {
+    q: "¿Qué efecto tiene la inmigración sobre la tasa de natalidad del país receptor?",
+    opts: ["La reduce, porque los inmigrantes tienen menos hijos","La mantiene igual, sin efecto","La aumenta, porque la población inmigrante es generalmente joven","No hay relación entre inmigración y natalidad"],
+    a: 2, exp: "La población inmigrante es generalmente joven y eso hace aumentar la tasa de natalidad en el país de destino."
+  },
+  {
+    q: "¿Qué es la fuga de cerebros?",
+    opts: ["El abandono de los estudios por parte de jóvenes emigrantes","La emigración de las personas más cualificadas de un país","La llegada masiva de estudiantes extranjeros","La pérdida de idioma nativo al emigrar"],
+    a: 1, exp: "La fuga de cerebros ocurre cuando emigran las personas con mayor formación, privando al país de origen de su talento."
+  },
+  {
+    q: "¿Qué son las remesas?",
+    opts: ["Ayudas del gobierno a los inmigrantes recién llegados","Transferencias de dinero que los emigrantes envían a sus familias en el país de origen","Documentos de residencia legal en el país de destino","Subvenciones para el regreso al país de origen"],
+    a: 1, exp: "Las remesas son el dinero que los emigrantes envían a sus familias. Representan una importante fuente de ingresos para muchos países en desarrollo."
+  },
+  {
+    q: "¿Qué diferencia a un refugiado de un inmigrante económico?",
+    opts: ["El refugiado viaja en avión y el económico en patera","El refugiado huye de persecuciones o guerras y está protegido internacionalmente; el económico busca mejores condiciones de vida","Solo el inmigrante económico puede solicitar residencia","No hay diferencia legal entre ambos"],
+    a: 1, exp: "El refugiado está reconocido por el derecho internacional y la ONU por huir de persecuciones o conflictos. El inmigrante económico migra voluntariamente en busca de trabajo."
+  },
+  {
+    q: "¿Desde cuándo España pasó a ser un país receptor de inmigrantes?",
+    opts: ["Desde los años 60 del siglo XX","Desde la transición democrática en 1975","Desde finales de los años 90 del siglo XX","Desde el ingreso en la UE en 1986"],
+    a: 2, exp: "Hasta finales de los años 90, España era principalmente un país emisor. A partir de entonces se convirtió en receptor, atraída por el empleo y la proximidad a Europa."
+  },
+  {
+    q: "¿Qué regiones de Europa tienen menor densidad de población?",
+    opts: ["El centro industrial","Las zonas costeras del Mediterráneo","Las regiones del norte, por su clima más frío","Los países del Benelux"],
+    a: 2, exp: "El norte de Europa (Escandinavia, Finlandia, Islandia) tiene las menores densidades de población del continente por su clima frío y hostil."
+  },
+  {
+    q: "¿Cuántos europeos emigraron desde mediados del siglo XIX hacia América?",
+    opts: ["Unos 5 millones","Más de 50 millones","Unos 20 millones","Menos de 10 millones"],
+    a: 1, exp: "Más de 50 millones de europeos emigraron a EE. UU., Argentina, Canadá, Brasil y Cuba desde mediados del siglo XIX."
+  },
+  {
+    q: "¿Qué obligación tienen los gobiernos respecto a los refugiados según el derecho internacional?",
+    opts: ["Pueden aceptarlos o rechazarlos libremente","Deben acogerlos y regularizar su situación","Solo deben darles asistencia médica temporal","Solo tienen obligación si pertenecen a la UE"],
+    a: 1, exp: "Los gobiernos tienen la obligación de acoger a los refugiados y regularizar su situación, según el derecho internacional y la ONU."
+  },
+  {
+    q: "¿Cuál es un efecto negativo de la emigración en el país de origen?",
+    opts: ["Aumento de la natalidad","Enriquecimiento cultural","Pérdida de población joven que paga impuestos, lo que retrasa el desarrollo","Mejora del sistema de pensiones"],
+    a: 2, exp: "La pérdida de jóvenes trabajadores reduce los ingresos fiscales y puede ralentizar el desarrollo económico del país emisor."
+  },
+  {
+    q: "¿Qué tipo de migración interior es la más común en la actualidad?",
+    opts: ["El éxodo rural","La migración pendular (hogar-trabajo-hogar)","La migración estacional al campo","El traslado definitivo a otra región"],
+    a: 1, exp: "Hoy la migración interior más habitual es la pendular: el desplazamiento diario del lugar de residencia al trabajo y de vuelta."
+  }
+];
+
+const fillQuestions = [
+  { q: "La densidad de población se calcula dividiendo la población total entre la ___ en km².", a: "superficie", alt: ["superficie (km²)", "extensión"] },
+  { q: "La densidad media de población en Europa es de unos ___ hab/km².", a: "70", alt: ["setenta"] },
+  { q: "Los inmigrantes son las personas que ___ a un lugar diferente al que residían.", a: "llegan", alt: ["llegan"] },
+  { q: "El saldo migratorio es la diferencia entre inmigrantes y ___.", a: "emigrantes", alt: ["emigrantes"] },
+  { q: "El desplazamiento masivo del campo a la ciudad se llama éxodo ___.", a: "rural", alt: ["rural"] },
+  { q: "Las migraciones ___ son los desplazamientos diarios del hogar al trabajo.", a: "pendulares", alt: ["pendulares"] },
+  { q: "Las transferencias de dinero que los emigrantes envían a sus familias se llaman ___.", a: "remesas", alt: ["remesas"] },
+  { q: "La emigración de los más cualificados de un país se denomina fuga de ___.", a: "cerebros", alt: ["cerebros"] },
+  { q: "Los refugiados están protegidos por el derecho internacional y la ___.", a: "ONU", alt: ["Organización de Naciones Unidas", "Naciones Unidas"] },
+  { q: "Cuando el saldo migratorio es positivo, significa que ___ más personas de las que se van.", a: "llegan", alt: ["entran", "vienen"] },
+  { q: "Las migraciones pueden ser interiores o ___ según el territorio en que tienen lugar.", a: "exteriores", alt: ["exteriores", "internacionales"] },
+  { q: "España pasó a ser un país receptor de inmigrantes desde finales de los años ___ del siglo XX.", a: "90", alt: ["noventa", "1990"] },
+];
+
+const matchSets = [
+  {
+    title: "Conceptos de migración",
+    pairs: [
+      { term: "Emigrante", def: "Persona que abandona su lugar de residencia" },
+      { term: "Inmigrante", def: "Persona que llega a un lugar diferente al que residía" },
+      { term: "Saldo migratorio", def: "Inmigrantes menos emigrantes" },
+      { term: "Remesas", def: "Dinero enviado por emigrantes a sus familias" },
+      { term: "Fuga de cerebros", def: "Emigración de personas muy cualificadas" },
+      { term: "Migración pendular", def: "Desplazamiento diario al lugar de trabajo" },
+    ]
+  },
+  {
+    title: "Tipos y causas de migración",
+    pairs: [
+      { term: "Éxodo rural", def: "Desplazamiento masivo del campo a la ciudad" },
+      { term: "Causa política", def: "Persecuciones o conflictos bélicos" },
+      { term: "Causa económica", def: "Búsqueda de trabajo y mejores condiciones" },
+      { term: "Causa natural", def: "Terremotos, inundaciones, sequías" },
+      { term: "Refugiado", def: "Protegido por el derecho internacional y la ONU" },
+      { term: "Solicitante de asilo", def: "Persona cuya solicitud de protección está siendo evaluada" },
+    ]
+  },
+  {
+    title: "Distribución de la población",
+    pairs: [
+      { term: "Densidad de población", def: "Población total / Superficie (km²)" },
+      { term: "Eje de alta densidad en Europa", def: "De Inglaterra a Italia por Bélgica y Alemania" },
+      { term: "Zonas de baja densidad", def: "Norte de Europa por su clima frío" },
+      { term: "Interior peninsular (España)", def: "Menos de 30 hab/km²" },
+      { term: "Litoral español", def: "Más de 200 hab/km²" },
+      { term: "Regiones que concentran 2/3 de la población mundial", def: "Asia Meridional, Europa y costa este de EE. UU." },
+    ]
+  },
+  {
+    title: "Efectos de la migración",
+    pairs: [
+      { term: "Aumento de la natalidad", def: "Efecto positivo de la inmigración en el destino" },
+      { term: "Separaciones familiares", def: "Efecto negativo de la emigración en el origen" },
+      { term: "Enriquecimiento cultural", def: "Beneficio de la llegada de inmigrantes" },
+      { term: "Tráfico ilegal de personas", def: "Riesgo al que se exponen muchos migrantes" },
+      { term: "Remesas al país de origen", def: "Efecto positivo de la emigración en el origen" },
+      { term: "Trabajos sin contrato", def: "Abuso de algunos empleadores hacia inmigrantes" },
+    ]
+  }
+];
+
+const truefalse = [
+  { q: "La densidad de población media en Europa es de unos 70 hab/km².", a: true, exp: "Correcto. Europa tiene una elevada densidad media de 70 hab/km², aunque está distribuida de forma irregular." },
+  { q: "Las zonas con mayor densidad de población en Europa se concentran en el norte del continente.", a: false, exp: "Falso. Las mayores densidades están en el eje centro-occidental: Inglaterra, Países Bajos, Bélgica, norte de Francia, Alemania e Italia del norte." },
+  { q: "El interior peninsular español tiene densidades superiores a 200 hab/km².", a: false, exp: "Falso. El interior tiene muy baja densidad (menos de 30 hab/km² en provincias como Zamora o Cuenca). Son las zonas del litoral las que superan los 200 hab/km²." },
+  { q: "Los emigrantes son las personas que abandonan su lugar de residencia.", a: true, exp: "Correcto. Los emigrantes salen, los inmigrantes llegan." },
+  { q: "Un saldo migratorio negativo significa que llegan más personas de las que se van.", a: false, exp: "Falso. Un saldo negativo indica que se van más personas de las que llegan. El positivo es el que indica que llegan más." },
+  { q: "El éxodo rural fue el desplazamiento masivo de personas de la ciudad al campo.", a: false, exp: "Falso. El éxodo rural fue al revés: del campo a la ciudad, especialmente intenso durante el siglo XX." },
+  { q: "Las migraciones pendulares son los desplazamientos diarios del hogar al trabajo.", a: true, exp: "Correcto. Es el tipo de migración interior más común en la actualidad." },
+  { q: "Las remesas son una fuente de ingresos importante para los países de origen de los emigrantes.", a: true, exp: "Correcto. Las remesas permiten cierto desarrollo económico en los países emisores." },
+  { q: "Los refugiados están obligados a regresar a su país en un plazo máximo de dos años.", a: false, exp: "Falso. Los gobiernos tienen la obligación de acogerlos y regularizar su situación. No existe ningún plazo forzoso de retorno." },
+  { q: "La fuga de cerebros beneficia al país del que emigran los trabajadores cualificados.", a: false, exp: "Falso. Es un efecto negativo: el país pierde a sus personas más formadas, lo que puede frenar su desarrollo." },
+  { q: "Más de 50 millones de europeos emigraron hacia América desde mediados del siglo XIX.", a: true, exp: "Correcto. Se dirigieron principalmente a EE. UU., Argentina, Canadá, Brasil y Cuba." },
+  { q: "España siempre ha sido un país receptor de inmigrantes a lo largo de su historia.", a: false, exp: "Falso. Hasta finales de los años 90 del siglo XX, España era principalmente un país emisor de emigrantes." },
+  { q: "La llegada de inmigrantes supone un enriquecimiento cultural para el país receptor.", a: true, exp: "Correcto. La diversidad cultural que aportan los inmigrantes es uno de los efectos positivos de la inmigración en el lugar de destino." },
+  { q: "Los solicitantes de asilo ya tienen reconocido el estatuto de refugiado.", a: false, exp: "Falso. Los solicitantes de asilo están en proceso de evaluación; aún no tienen reconocida la condición de refugiado." },
+  { q: "Las regiones de Asia Meridional y Oriental concentran una gran parte de la población mundial.", a: true, exp: "Correcto. Junto con Europa y la costa este de EE. UU., estas regiones concentran dos tercios de la población mundial." },
+];
+
+// ══════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════
+let currentMode = '';
+let questions = [];
+let qIndex = 0;
+let score = 0;
+let totalScore = 0;
+let streak = 0;
+let answered = false;
+let matchState = {};
+
+function saveScore() {
+  document.getElementById('totalScore').textContent = totalScore;
+  document.getElementById('streak').textContent = streak;
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function startMode(mode) {
+  currentMode = mode;
+  qIndex = 0; score = 0; answered = false;
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+
+  const labels = { test:'Test', fill:'Completa la frase', match:'Empareja', true:'Verdadero o Falso' };
+  document.getElementById('modeLabel').textContent = labels[mode];
+
+  if (mode === 'test') {
+    questions = shuffle([...testQuestions]).slice(0, 12);
+  } else if (mode === 'fill') {
+    questions = shuffle([...fillQuestions]);
+  } else if (mode === 'match') {
+    questions = shuffle([...matchSets]);
+  } else if (mode === 'true') {
+    questions = shuffle([...truefalse]).slice(0, 12);
+  }
+  renderQuestion();
+}
+
+function goMenu() {
+  document.getElementById('game').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('menu').style.display = 'block';
+}
+
+function restartMode() {
+  startMode(currentMode);
+}
+
+// ══════════════════════════════════════════════
+// RENDERIZAR PREGUNTAS
+// ══════════════════════════════════════════════
+function renderQuestion() {
+  answered = false;
+  const total = questions.length;
+  document.getElementById('qCount').textContent = `${qIndex+1} / ${total}`;
+  document.getElementById('progressFill').style.width = `${(qIndex/total)*100}%`;
+  document.getElementById('btnNext').classList.remove('show');
+
+  const area = document.getElementById('questionArea');
+
+  if (currentMode === 'test') renderTest(area);
+  else if (currentMode === 'fill') renderFill(area);
+  else if (currentMode === 'match') renderMatch(area);
+  else if (currentMode === 'true') renderTrue(area);
+}
+
+function renderTest(area) {
+  const q = questions[qIndex];
+  const letters = ['A','B','C','D'];
+  area.innerHTML = `
+    <div class="question-card">
+      <div class="q-badge">Pregunta ${qIndex+1}</div>
+      <div class="question-text">${q.q}</div>
+    </div>
+    <div class="options">
+      ${q.opts.map((o,i) => `
+        <button class="opt" onclick="answerTest(${i})" id="opt${i}">
+          <span class="opt-letter">${letters[i]}</span>
+          ${o}
+        </button>`).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>`;
+}
+
+function answerTest(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[qIndex];
+  const fb = document.getElementById('feedback');
+  document.querySelectorAll('.opt').forEach(o => o.classList.add('disabled'));
+  if (i === q.a) {
+    document.getElementById(`opt${i}`).classList.add('correct');
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `✅ <strong>¡Correcto!</strong> ${q.exp}`;
+    score++; streak++;
+    totalScore += (streak > 2 ? 15 : 10);
+  } else {
+    document.getElementById(`opt${i}`).classList.add('wrong');
+    document.getElementById(`opt${q.a}`).classList.add('correct');
+    fb.className = 'feedback show ko';
+    fb.innerHTML = `❌ <strong>Incorrecto.</strong> ${q.exp}`;
+    streak = 0;
+  }
+  saveScore();
+  document.getElementById('btnNext').classList.add('show');
+}
+
+function renderFill(area) {
+  const q = questions[qIndex];
+  area.innerHTML = `
+    <div class="question-card">
+      <div class="q-badge">Completa</div>
+      <div class="question-text">${q.q}</div>
+    </div>
+    <div class="fill-wrap">
+      <input class="fill-input" id="fillInput" placeholder="Escribe tu respuesta..." autocomplete="off"
+        onkeydown="if(event.key==='Enter')checkFill()">
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn-next show" style="margin-top:.75rem" onclick="checkFill()">Comprobar</button>`;
+  setTimeout(() => document.getElementById('fillInput').focus(), 100);
+}
+
+function checkFill() {
+  if (answered) return;
+  const q = questions[qIndex];
+  const val = document.getElementById('fillInput').value.trim().toLowerCase();
+  const correct = [q.a.toLowerCase(), ...(q.alt || []).map(x=>x.toLowerCase())];
+  const fb = document.getElementById('feedback');
+  answered = true;
+  document.getElementById('fillInput').disabled = true;
+  if (correct.includes(val)) {
+    document.getElementById('fillInput').classList.add('correct');
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `✅ <strong>¡Correcto!</strong>`;
+    score++; streak++; totalScore += 10;
+  } else {
+    document.getElementById('fillInput').classList.add('wrong');
+    fb.className = 'feedback show ko';
+    fb.innerHTML = `❌ <strong>Respuesta correcta:</strong> <strong>${q.a}</strong>`;
+    streak = 0;
+  }
+  saveScore();
+  const btn = document.querySelector('.btn-next.show');
+  if(btn){ btn.onclick = nextQuestion; btn.textContent = 'Siguiente →'; }
+}
+
+function renderMatch(area) {
+  const set = questions[qIndex];
+  const pairs = shuffle([...set.pairs]);
+  const terms = pairs.map(p => p.term);
+  const defs = shuffle(pairs.map(p => p.def));
+  matchState = { pairs, terms, defs, selected: null, side: null, matched: new Set(), errors: 0 };
+
+  area.innerHTML = `
+    <div class="question-card">
+      <div class="q-badge">Empareja — ${set.title}</div>
+      <div class="question-text">Selecciona un concepto y luego su definición</div>
+    </div>
+    <div class="match-grid">
+      <div class="match-col" id="colTerms">
+        ${terms.map((t,i) => `<div class="match-item" id="term${i}" onclick="selectMatch('term',${i})">${t}</div>`).join('')}
+      </div>
+      <div class="match-col" id="colDefs">
+        ${defs.map((d,i) => `<div class="match-item" id="def${i}" onclick="selectMatch('def',${i})">${d}</div>`).join('')}
+      </div>
+    </div>
+    <div class="feedback" id="feedback"></div>`;
+}
+
+function selectMatch(side, idx) {
+  const ms = matchState;
+  const el = document.getElementById(`${side}${idx}`);
+  if (el.classList.contains('matched')) return;
+
+  if (ms.side === null) {
+    ms.selected = idx; ms.side = side;
+    document.querySelectorAll('.match-item').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+  } else {
+    if (ms.side === side) {
+      document.querySelectorAll('.match-item').forEach(e => e.classList.remove('selected'));
+      ms.selected = idx; ms.side = side;
+      el.classList.add('selected');
+      return;
+    }
+    const termIdx = side === 'def' ? ms.selected : idx;
+    const defIdx  = side === 'def' ? idx : ms.selected;
+    const term = ms.terms[termIdx];
+    const def  = ms.defs[defIdx];
+    const correct = ms.pairs.find(p => p.term === term)?.def === def;
+
+    if (correct) {
+      document.getElementById(`term${termIdx}`).classList.add('matched');
+      document.getElementById(`def${defIdx}`).classList.add('matched');
+      ms.matched.add(term);
+      if (ms.matched.size === ms.pairs.length) {
+        const fb = document.getElementById('feedback');
+        fb.className = 'feedback show ok';
+        fb.innerHTML = `✅ <strong>¡Todos emparejados!</strong> ${ms.errors === 0 ? 'Sin errores. ¡Perfecto!' : `${ms.errors} error(es).`}`;
+        score++; totalScore += (ms.errors === 0 ? 15 : 8);
+        saveScore();
+        document.getElementById('btnNext').classList.add('show');
+      }
+    } else {
+      ms.errors++;
+      streak = 0; saveScore();
+      const tEl = document.getElementById(`term${termIdx}`);
+      const dEl = document.getElementById(`def${defIdx}`);
+      tEl.classList.add('error'); dEl.classList.add('error');
+      setTimeout(() => { tEl.classList.remove('error','selected'); dEl.classList.remove('error','selected'); }, 500);
+    }
+    ms.selected = null; ms.side = null;
+    document.querySelectorAll('.match-item:not(.matched)').forEach(e => e.classList.remove('selected'));
+  }
+}
+
+function renderTrue(area) {
+  const q = questions[qIndex];
+  area.innerHTML = `
+    <div class="question-card">
+      <div class="q-badge">Verdadero o Falso</div>
+      <div class="question-text">${q.q}</div>
+    </div>
+    <div class="options">
+      <button class="opt" onclick="answerTrue(true)" id="optT">
+        <span class="opt-letter">V</span> Verdadero
+      </button>
+      <button class="opt" onclick="answerTrue(false)" id="optF">
+        <span class="opt-letter">F</span> Falso
+      </button>
+    </div>
+    <div class="feedback" id="feedback"></div>`;
+}
+
+function answerTrue(val) {
+  if (answered) return;
+  answered = true;
+  const q = questions[qIndex];
+  const fb = document.getElementById('feedback');
+  document.querySelectorAll('.opt').forEach(o => o.classList.add('disabled'));
+  const correctEl = q.a ? 'optT' : 'optF';
+  const chosenEl  = val ? 'optT' : 'optF';
+  if (val === q.a) {
+    document.getElementById(chosenEl).classList.add('correct');
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `✅ <strong>¡Correcto!</strong> ${q.exp}`;
+    score++; streak++; totalScore += 10;
+  } else {
+    document.getElementById(chosenEl).classList.add('wrong');
+    document.getElementById(correctEl).classList.add('correct');
+    fb.className = 'feedback show ko';
+    fb.innerHTML = `❌ <strong>Incorrecto.</strong> ${q.exp}`;
+    streak = 0;
+  }
+  saveScore();
+  document.getElementById('btnNext').classList.add('show');
+}
+
+// ══════════════════════════════════════════════
+// SIGUIENTE / FIN
+// ══════════════════════════════════════════════
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= questions.length) showResult();
+  else renderQuestion();
+}
+
+function showResult() {
+  document.getElementById('game').style.display = 'none';
+  const res = document.getElementById('result');
+  res.style.display = 'block';
+  const total = questions.length;
+  const pct = Math.round((score / total) * 100);
+  document.getElementById('resultScore').textContent = pct + '%';
+  let stars = pct >= 90 ? '⭐⭐⭐' : pct >= 60 ? '⭐⭐' : '⭐';
+  let title = pct >= 90 ? '¡Excelente!' : pct >= 60 ? '¡Bien hecho!' : 'Sigue practicando';
+  let msg = pct >= 90 ? `Has acertado ${score} de ${total}. ¡Dominas el tema!`
+           : pct >= 60 ? `Has acertado ${score} de ${total}. Repasa los errores.`
+           : `Has acertado ${score} de ${total}. Te recomiendo repasar el PDF.`;
+  document.getElementById('resultStars').textContent = stars;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMsg').textContent = msg;
+}
+
+// ══════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+document.getElementById('totalScore').textContent = totalScore;
+</script>
+</body>
+</html>
